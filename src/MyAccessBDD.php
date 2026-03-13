@@ -63,8 +63,12 @@ class MyAccessBDD extends AccessBDD {
      */	
     protected function traitementInsert(string $table, ?array $champs) : ?int{
         switch($table){
-            case "" :
-                // return $this->uneFonction(parametres);
+            case "livre" :
+                 return $this->insertLivre($champs);
+            case "dvd" :
+                 return $this->insertDvd($champs);
+            case "revue" : 
+                 return $this->insertRevue($champs);
             default:                    
                 // cas général
                 return $this->insertOneTupleOneTable($table, $champs);	
@@ -81,8 +85,12 @@ class MyAccessBDD extends AccessBDD {
      */	
     protected function traitementUpdate(string $table, ?string $id, ?array $champs) : ?int{
         switch($table){
-            case "" :
-                // return $this->uneFonction(parametres);
+            case "livre" :
+                 return $this->updateLivre($id, $champs);
+            case "dvd" :
+                 return $this->updateDvd($id, $champs);
+            case "revue" : 
+                 return $this->updateRevue($id, $champs);
             default:                    
                 // cas général
                 return $this->updateOneTupleOneTable($table, $id, $champs);
@@ -98,8 +106,12 @@ class MyAccessBDD extends AccessBDD {
      */	
     protected function traitementDelete(string $table, ?array $champs) : ?int{
         switch($table){
-            case "" :
-                // return $this->uneFonction(parametres);
+            case "livre":
+                return $this->deleteLivre($champs);
+            case "dvd":
+                return $this->deleteDvd($champs);
+            case "revue":
+                return $this->deleteRevue($champs);
             default:                    
                 // cas général
                 return $this->deleteTuplesOneTable($table, $champs);	
@@ -276,5 +288,362 @@ class MyAccessBDD extends AccessBDD {
         $requete .= "order by e.dateAchat DESC";
         return $this->conn->queryBDD($requete, $champNecessaire);
     }		    
+        // ====== TRANSACTIONS + INSERT LIVRE ======
+
+    private function beginTransactionSql() : bool {
+        return $this->conn->updateBDD("START TRANSACTION;") !== null;
+    }
+    private function commitSql() : bool {
+        return $this->conn->updateBDD("COMMIT;") !== null;
+    }
+    private function rollbackSql() : bool {
+        return $this->conn->updateBDD("ROLLBACK;") !== null;
+    }
+
+    private function insertLivre(?array $champs) : ?int {
+        if (empty($champs)) return null;
+
+        $id = $champs["id"] ?? null;
+        $titre = $champs["titre"] ?? null;
+        $idRayon = $champs["idRayon"] ?? null;
+        $idPublic = $champs["idPublic"] ?? null;
+        $idGenre = $champs["idGenre"] ?? null;
+
+        if (empty($id) || empty($titre) || empty($idRayon) || empty($idPublic) || empty($idGenre)) {
+            return null;
+        }
+
+        $doc = [
+            "id" => $id,
+            "titre" => $titre,
+            "image" => $champs["image"] ?? null,
+            "idRayon" => $idRayon,
+            "idPublic" => $idPublic,
+            "idGenre" => $idGenre
+        ];
+        $livreDvd = ["id" => $id];
+        $livre = [
+            "id" => $id,
+            "ISBN" => $champs["ISBN"] ?? null,
+            "auteur" => $champs["auteur"] ?? null,
+            "collection" => $champs["collection"] ?? null
+        ];
+
+        if (!$this->beginTransactionSql()) return null;
+
+        $n1 = $this->insertOneTupleOneTable("document", $doc);
+        if ($n1 !== 1) { $this->rollbackSql(); return null; }
+
+        $n2 = $this->insertOneTupleOneTable("livres_dvd", $livreDvd);
+        if ($n2 !== 1) { $this->rollbackSql(); return null; }
+
+        $n3 = $this->insertOneTupleOneTable("livre", $livre);
+        if ($n3 !== 1) { $this->rollbackSql(); return null; }
+
+        if (!$this->commitSql()) { $this->rollbackSql(); return null; }
+        return 1;
+    }
     
+    private function insertDvd(?array $champs): ?int {
+        if (empty($champs)) return null;
+        
+        $id = $champs["id"] ?? null;
+        $titre = $champs["titre"] ?? null;
+        $idRayon = $champs["idRayon"] ?? null;
+        $idPublic = $champs["idPublic"] ?? null;
+        $idGenre = $champs["idGenre"] ?? null;
+
+        if (empty($id) || empty($titre) || empty($idRayon) || empty($idPublic) || empty($idGenre)) {
+            return null;
+        }
+
+        $doc = [
+            "id" => $id,
+            "titre" => $titre,
+            "image" => $champs["image"] ?? null,
+            "idRayon" => $idRayon,
+            "idPublic" => $idPublic,
+            "idGenre" => $idGenre
+        ];
+        $livreDvd = ["id" => $id];
+        $dvd = [
+            "id" => $id,
+            "duree" => $champs["duree"] ?? null,
+            "realisateur" => $champs["realisateur"] ?? null,
+            "synopsis" => $champs["synopsis"] ?? null
+        ];
+
+        if (!$this->beginTransactionSql()) return null;
+
+        $n1 = $this->insertOneTupleOneTable("document", $doc);
+        if ($n1 !== 1) { $this->rollbackSql(); return null; }
+
+        $n2 = $this->insertOneTupleOneTable("livres_dvd", $livreDvd);
+        if ($n2 !== 1) { $this->rollbackSql(); return null; }
+
+        $n3 = $this->insertOneTupleOneTable("dvd", $dvd);
+        if ($n3 !== 1) { $this->rollbackSql(); return null; }
+
+        if (!$this->commitSql()) { $this->rollbackSql(); return null; }
+        return 1;
+    }
+    
+    private function insertRevue(?array $champs): ?int {
+            if (empty($champs)) return null;
+
+            $id = $champs["id"] ?? null;
+            $titre = $champs["titre"] ?? null;
+            $idRayon = $champs["idRayon"] ?? null;
+            $idPublic = $champs["idPublic"] ?? null;
+            $idGenre = $champs["idGenre"] ?? null;
+
+            if (empty($id) || empty($titre) || empty($idRayon) || empty($idPublic) || empty($idGenre)) {
+                return null;
+            }
+
+            $doc = [
+                "id" => $id,
+                "titre" => $titre,
+                "image" => $champs["image"] ?? null,
+                "idRayon" => $idRayon,
+                "idPublic" => $idPublic,
+                "idGenre" => $idGenre
+            ];
+            $revue = [
+                "id" => $id,
+                "periodicite" => $champs["periodicite"] ?? null,
+                "delaiMiseADispo" => $champs["delaiMiseADispo"] ?? null,
+            ];
+
+            if (!$this->beginTransactionSql()) return null;
+
+            $n1 = $this->insertOneTupleOneTable("document", $doc);
+            if ($n1 !== 1) { $this->rollbackSql(); return null; }
+
+            $n2 = $this->insertOneTupleOneTable("revue", $revue);
+            if ($n2 !== 1) { $this->rollbackSql(); return null; }
+
+            if (!$this->commitSql()) { $this->rollbackSql(); return null; }
+            return 1;
+        }
+    private function updateLivre(?string $id, ?array $champs) : ?int {
+        if (empty($id) || empty($champs)) return null;
+
+        // Interdit de modifier l'id
+        unset($champs["id"]);
+
+        // Champs possibles pour document
+        $doc = [];
+        foreach (["titre","image","idRayon","idPublic","idGenre"] as $k) {
+            if (array_key_exists($k, $champs)) {
+                $doc[$k] = $champs[$k];
+            }
+        }
+
+        // Champs possibles pour livre
+        $livre = [];
+        foreach (["ISBN","auteur","collection"] as $k) {
+            if (array_key_exists($k, $champs)) {
+                $livre[$k] = $champs[$k];
+            }
+        }
+
+        // Rien à mettre à jour
+        if (empty($doc) && empty($livre)) return null;
+
+        if (!$this->beginTransactionSql()) return null;
+
+        $total = 0;
+
+        // Update document si nécessaire
+        if (!empty($doc)) {
+            $n1 = $this->updateOneTupleOneTable("document", $id, $doc);
+            if ($n1 === null) { $this->rollbackSql(); return null; }
+            $total += $n1;
+        }
+
+        // Update livre si nécessaire
+        if (!empty($livre)) {
+            $n2 = $this->updateOneTupleOneTable("livre", $id, $livre);
+            if ($n2 === null) { $this->rollbackSql(); return null; }
+            $total += $n2;
+        }
+
+        if (!$this->commitSql()) { $this->rollbackSql(); return null; }
+        return $total;
+    }
+    private function updateDvd(?string $id, ?array $champs) : ?int {
+        if (empty($id) || empty($champs)) return null;
+
+        // Interdit de modifier l'id
+        unset($champs["id"]);
+
+        // Champs possibles pour document
+        $doc = [];
+        foreach (["titre","image","idRayon","idPublic","idGenre"] as $k) {
+            if (array_key_exists($k, $champs)) {
+                $doc[$k] = $champs[$k];
+            }
+        }
+
+        // Champs possibles pour dvd
+        $dvd = [];
+        foreach (["duree","realisateur","synopsis"] as $k) {
+            if (array_key_exists($k, $champs)) {
+                $dvd[$k] = $champs[$k];
+            }
+        }
+
+        // Rien à mettre à jour
+        if (empty($doc) && empty($dvd)) return null;
+
+        if (!$this->beginTransactionSql()) return null;
+
+        $total = 0;
+
+        // Update document si nécessaire
+        if (!empty($doc)) {
+            $n1 = $this->updateOneTupleOneTable("document", $id, $doc);
+            if ($n1 === null) { $this->rollbackSql(); return null; }
+            $total += $n1;
+        }
+
+        // Update dvd si nécessaire
+        if (!empty($dvd)) {
+            $n2 = $this->updateOneTupleOneTable("dvd", $id, $dvd);
+            if ($n2 === null) { $this->rollbackSql(); return null; }
+            $total += $n2;
+        }
+
+        if (!$this->commitSql()) { $this->rollbackSql(); return null; }
+        return $total;
+    }
+    private function updateRevue(?string $id, ?array $champs) : ?int {
+        if (empty($id) || empty($champs)) return null;
+
+        // Interdit de modifier l'id
+        unset($champs["id"]);
+
+        // Champs possibles pour document
+        $doc = [];
+        foreach (["titre", "image", "idRayon", "idPublic", "idGenre"] as $k) {
+            if (array_key_exists($k, $champs)) {
+                $doc[$k] = $champs[$k];
+            }
+        }
+
+        // Champs possibles pour revue
+        $revue = [];
+        foreach (["periodicite", "delaiMiseADispo"] as $k) {
+            if (array_key_exists($k, $champs)) {
+                $revue[$k] = $champs[$k];
+            }
+        }
+
+        // Rien à mettre à jour
+        if (empty($doc) && empty($revue)) return null;
+
+        if (!$this->beginTransactionSql()) return null;
+
+        $total = 0;
+
+        // Update document si nécessaire
+        if (!empty($doc)) {
+            $n1 = $this->updateOneTupleOneTable("document", $id, $doc);
+            if ($n1 === null) { $this->rollbackSql(); return null; }
+            $total += $n1;
+        }
+
+        // Update revue si nécessaire
+        if (!empty($revue)) {
+            $n2 = $this->updateOneTupleOneTable("revue", $id, $revue);
+            if ($n2 === null) { $this->rollbackSql(); return null; }
+            $total += $n2;
+        }
+
+        if (!$this->commitSql()) { $this->rollbackSql(); return null; }
+        return $total;
+    }
+    
+    private function countCommandesLivreDvd(string $id) : int {
+        $res = $this->conn->queryBDD(
+            "SELECT COUNT(*) AS nb FROM commandedocument WHERE idLivreDvd = :id;",
+            ["id" => $id]
+        );
+        return (int)($res[0]["nb"] ?? 0);
+    }
+
+    private function countExemplairesRevue(string $id) : int {
+        $res = $this->conn->queryBDD(
+            "SELECT COUNT(*) AS nb FROM exemplaire WHERE id = :id;",
+            ["id" => $id]
+        );
+        return (int)($res[0]["nb"] ?? 0);
+    }
+    private function deleteLivre(?array $champs) : ?int {
+        if (empty($champs) || empty($champs["id"])) return null;
+        $id = $champs["id"];
+
+        // Interdit si commandes
+        if ($this->countCommandesLivreDvd($id) > 0) {
+            return 0; // suppression refusée
+        }
+
+        if (!$this->beginTransactionSql()) return null;
+
+        $n1 = $this->deleteTuplesOneTable("livre", ["id" => $id]);
+        if ($n1 === null) { $this->rollbackSql(); return null; }
+
+        $n2 = $this->deleteTuplesOneTable("livres_dvd", ["id" => $id]);
+        if ($n2 === null) { $this->rollbackSql(); return null; }
+
+        $n3 = $this->deleteTuplesOneTable("document", ["id" => $id]);
+        if ($n3 === null) { $this->rollbackSql(); return null; }
+
+        if (!$this->commitSql()) { $this->rollbackSql(); return null; }
+        return $n1 + $n2 + $n3;
+    }
+    private function deleteDvd(?array $champs) : ?int {
+        if (empty($champs) || empty($champs["id"])) return null;
+        $id = $champs["id"];
+
+        // Interdit si commandes
+        if ($this->countCommandesLivreDvd($id) > 0) {
+            return 0;
+        }
+
+        if (!$this->beginTransactionSql()) return null;
+
+        $n1 = $this->deleteTuplesOneTable("dvd", ["id" => $id]);
+        if ($n1 === null) { $this->rollbackSql(); return null; }
+
+        $n2 = $this->deleteTuplesOneTable("livres_dvd", ["id" => $id]);
+        if ($n2 === null) { $this->rollbackSql(); return null; }
+
+        $n3 = $this->deleteTuplesOneTable("document", ["id" => $id]);
+        if ($n3 === null) { $this->rollbackSql(); return null; }
+
+        if (!$this->commitSql()) { $this->rollbackSql(); return null; }
+        return $n1 + $n2 + $n3;
+    }
+    private function deleteRevue(?array $champs) : ?int {
+        if (empty($champs) || empty($champs["id"])) return null;
+        $id = $champs["id"];
+
+        // Interdit si exemplaires
+        if ($this->countExemplairesRevue($id) > 0) {
+            return 0;   // était: return 0;
+        }
+
+        if (!$this->beginTransactionSql()) return null;
+
+        $n1 = $this->deleteTuplesOneTable("revue", ["id" => $id]);
+        if ($n1 === null) { $this->rollbackSql(); return null; }
+
+        $n2 = $this->deleteTuplesOneTable("document", ["id" => $id]);
+        if ($n2 === null) { $this->rollbackSql(); return null; }
+
+        if (!$this->commitSql()) { $this->rollbackSql(); return null; }
+        return $n1 + $n2;
+    }
 }
