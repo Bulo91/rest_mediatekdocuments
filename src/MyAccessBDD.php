@@ -101,6 +101,8 @@ class MyAccessBDD extends AccessBDD {
                  return $this->updateDvd($id, $champs);
             case "revue" : 
                  return $this->updateRevue($id, $champs);
+            case "exemplaire" :
+                return $this->updateExemplaire($id, $champs);
             default:                    
                 // cas général
                 return $this->updateOneTupleOneTable($table, $id, $champs);
@@ -126,6 +128,8 @@ class MyAccessBDD extends AccessBDD {
                 return $this->deleteCommandeDocument($champs);
             case "commandesrevue":
                 return $this->deleteCommandeRevue($champs);
+            case "exemplaire":
+                return $this->deleteExemplaire($champs);
             default:                    
                 // cas général
                 return $this->deleteTuplesOneTable($table, $champs);	
@@ -296,11 +300,34 @@ class MyAccessBDD extends AccessBDD {
             return null;
         }
         $champNecessaire['id'] = $champs['id'];
-        $requete = "Select e.id, e.numero, e.dateAchat, e.photo, e.idEtat ";
+        $requete = "Select e.id, e.numero, e.dateAchat, e.photo, e.idEtat, et.libelle as libelleEtat ";
         $requete .= "from exemplaire e join document d on e.id=d.id ";
+        $requete .= "join etat et on e.idEtat = et.id ";
         $requete .= "where e.id = :id ";
         $requete .= "order by e.dateAchat DESC";
         return $this->conn->queryBDD($requete, $champNecessaire);
+    }
+
+    /**
+     * modifie l'état d'un exemplaire (clé composite : id document + numero)
+     * @param string|null $id id du document
+     * @param array|null $champs doit contenir 'numero' et 'idEtat'
+     * @return int|null nombre de tuples modifiés ou null si erreur
+     */
+    private function updateExemplaire(?string $id, ?array $champs) : ?int{
+        if(empty($id) || empty($champs)){
+            return null;
+        }
+        if(!array_key_exists('numero', $champs) || !array_key_exists('idEtat', $champs)){
+            return null;
+        }
+        $requete = "UPDATE exemplaire SET idEtat = :idEtat WHERE id = :id AND numero = :numero;";
+        $params = [
+            'idEtat' => $champs['idEtat'],
+            'id' => $id,
+            'numero' => $champs['numero']
+        ];
+        return $this->conn->updateBDD($requete, $params);
     }
     
         /**
@@ -724,6 +751,27 @@ class MyAccessBDD extends AccessBDD {
 
         if (!$this->commitSql()) { $this->rollbackSql(); return null; }
         return $n1 + $n2;
+    }
+
+    /**
+     * supprime un exemplaire (clé composite : id + numero)
+     * @param array|null $champs doit contenir 'id' et 'numero'
+     * @return int|null nombre de lignes supprimées ou null si erreur
+     */
+    private function deleteExemplaire(?array $champs) : ?int {
+        if (empty($champs)) {
+            return null;
+        }
+        if (!array_key_exists('id', $champs) || !array_key_exists('numero', $champs)) {
+            return null;
+        }
+        $id = $champs['id'];
+        $numero = $champs['numero'];
+        if ($id === '' || $id === null) {
+            return null;
+        }
+        $requete = "DELETE FROM exemplaire WHERE id = :id AND numero = :numero;";
+        return $this->conn->updateBDD($requete, ['id' => $id, 'numero' => (int)$numero]);
     }
     
     /**
