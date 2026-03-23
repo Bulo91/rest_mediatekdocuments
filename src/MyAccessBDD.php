@@ -52,6 +52,8 @@ class MyAccessBDD extends AccessBDD {
             case "etat" :
                 // select portant sur une table contenant juste id et libelle
                 return $this->selectTableSimple($table);
+            case "authentification":
+                return $this->authentifierUtilisateur($champs);    
             case "" :
                 // return $this->uneFonction(parametres);
             default:
@@ -1013,5 +1015,23 @@ class MyAccessBDD extends AccessBDD {
         if (!$this->commitSql()) { $this->rollbackSql(); return null; }
 
         return ($n1 > 0 && $n2 > 0) ? 1 : 0;
+    }
+    private function authentifierUtilisateur(?array $champs) : array{
+        if(empty($champs) || !array_key_exists('login', $champs) || !array_key_exists('motDePasse', $champs)){
+            return [];
+        }
+
+        $requete = "SELECT u.id, u.login, u.idService, s.libelle as libelleService, ";
+        $requete .= "s.accesDocuments, s.accesCommandes, s.accesExemplaires, u.actif ";
+        $requete .= "FROM utilisateur u ";
+        $requete .= "JOIN service s ON u.idService = s.id ";
+        $requete .= "WHERE u.login = :login AND u.motDePasse = :motDePasse AND u.actif = 1";
+
+        $result = $this->conn->queryBDD($requete, [
+            'login' => $champs['login'],
+            'motDePasse' => $champs['motDePasse']
+        ]);
+
+        return is_array($result) ? $result : [];
     }
 }
